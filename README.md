@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔎 Kamil Wallet Tracker (Solana Fund Flow Tracer MVP)
 
-## Getting Started
+> A minimal on-chain intelligence tool for tracing token movements across Solana wallets, highlighting Binance inflows/outflows and tracking fund flow patterns with a clean visual dashboard.
 
-First, run the development server:
+## 🚀 Overview
 
-```bash
+This MVP tracks token transfers starting from one or more wallet addresses, revealing where funds were sent, when, and what tokens were involved. It also flags any Binance-related movements. Built for fund investigators, researchers, and degens wanting to unravel suspicious token flows.
+
+---
+
+## 🧠 Features
+
+- ✅ **Multi-wallet tracing**: Input multiple Solana wallets (comma-separated).
+- ✅ **Token filter**: Focus on specific tokens in the trace.
+- ✅ **Timeline table**: Clean table view showing `from`, `to`, `token`, `amount`, and `timestamp`.
+- ✅ **Binance detection**: Flags inflows/outflows to known Binance wallets.
+- ✅ **Export options**: Download trace results as CSV or PDF.
+- ✅ **Mobile-friendly UI**: Responsive, client-ready frontend built with TailwindCSS + Next.js.
+
+---
+
+## 📸 Demo Screenshot
+
+*Insert a screenshot here once you’re ready*
+
+---
+
+## 🧱 Tech Stack
+
+- **Frontend**: Next.js 15, React 19, TailwindCSS
+- **Data Fetching**: API route in `/api/trace-flow`
+- **State Management**: React `useState` + props
+- **Binance Detection**: Static list (can be replaced by a live API)
+- **Exporting**: `papaparse`, `jspdf`, `file-saver`
+
+---
+
+## 🧪 Usage
+
+1. Clone the repo:
+
+   ```bash
+   git clone https://github.com/your-username/kamil-wallet-tracker.git
+   cd kamil-wallet-tracker
+Install dependencies:
+
+bash
+Copy code
+npm install
+Create a .env.local if needed (e.g. for API keys or config)
+
+Run the dev server:
+
+bash
+Copy code
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Open http://localhost:3000 in your browser and start tracing.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+📂 Project Structure
+bash
+Copy code
+/components
+  ├── TraceFlowUI.tsx         # Main frontend component with input + table
+  ├── FlowTimelineTable.tsx   # Table with export buttons (CSV, PDF)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+/pages/api
+  ├── trace-flow.ts           # Server-side logic for tracing funds
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+/utils
+  ├── exportUtils.ts          # CSV and PDF download helpers
+🪪 Attribution
+This tool was built as part of a custom MVP for a Solana fund investigation project. All Binance wallet tags used are public and static (subject to updates).
 
-## Learn More
+🛠 Future Ideas (v2/Milestone 2)
+ Graph view of wallet relationships (nodes & edges)
 
-To learn more about Next.js, take a look at the following resources:
+ Smart wallet clustering (detect related wallets)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+ Real-time alerts for suspicious flows
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+ Ghost token awakening detection
 
-## Deploy on Vercel
+ Volume-based anomaly flags
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+📬 Contact
+Built with 💻 by Obaka (@yourhandle).
+Need a custom blockchain intelligence dashboard? Let’s talk.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+📄 License
+MIT – do what you want, but don't be evil.
+
+yaml
+Copy code
+
+---
+
+### Let me know if you want:
+- A logo/cover image (I can generate one),
+- To auto-link to your GitHub profile,
+- Or want to separate it into client/api folders more formally.
+
+This is **client-facing** and **investor-grade**—no fluff, just function. Ready to commit and push.
+
+
+
+
+
+
+
+
+Ask ChatGPT
+
+
+
+Tools
+
+
