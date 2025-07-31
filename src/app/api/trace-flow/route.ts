@@ -9,8 +9,8 @@ export async function POST(req: Request) {
   }
 
   try {
-    const flows = await traceFlowEngine(wallets);
-    return NextResponse.json(flows, { status: 200 });
+    const { trace, firstFunders } = await traceFlowEngine(wallets);
+    return NextResponse.json({ trace, firstFunders }, { status: 200 });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

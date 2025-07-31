@@ -3,6 +3,7 @@
 
 import React, { useState } from "react";
 import { FlowTimelineTable } from "@/components/FlowTimelineTable";
+import { ClipboardCopyIcon } from "lucide-react";
 
 type FlowEntry = {
     from: string;
@@ -12,7 +13,11 @@ type FlowEntry = {
     timestamp: number;
     isBinanceInflow: boolean;
     isBinanceOutflow: boolean;
+    isFirstFunder?: boolean;
 };
+
+type FirstFunderMap = Record<string, { from: string; timestamp: number }>;
+
 
 export default function TraceFlowUI() {
     const [walletInput, setWalletInput] = useState("");
@@ -20,6 +25,8 @@ export default function TraceFlowUI() {
     const [loading, setLoading] = useState(false);
     const [flows, setFlows] = useState<FlowEntry[]>([]);
     const [error, setError] = useState("");
+    const [firstFunders, setFirstFunders] = useState<FirstFunderMap>({});
+
 
     const handleTrace = async () => {
         setLoading(true);
@@ -54,6 +61,8 @@ export default function TraceFlowUI() {
             }
 
             setFlows(data.trace);
+            setFirstFunders(data.firstFunders || {});
+
         } catch (err: any) {
             console.error("Error tracing flow:", err);
             setError(err.message || "Unexpected error");
@@ -148,6 +157,27 @@ export default function TraceFlowUI() {
                 )}
             </button>
 
+            {/* 🟡 First Funder Summary */}
+            {!loading && Object.keys(firstFunders).length > 0 && (
+                <div className="mt-8">
+                    <h3 className="text-lg font-semibold text-gray-100 mb-2">First Funders</h3>
+                    <div className="bg-gray-700 p-4 rounded-lg space-y-2 border border-yellow-500/30">
+                        {Object.entries(firstFunders).map(([recipient, { from, timestamp }]) => (
+                            <div key={recipient} className="text-sm text-gray-300">
+                                <span className="font-mono text-yellow-300">{from}</span>{" "}
+                                was the <strong>first to fund</strong>{" "}
+                                <span className="font-mono text-blue-300">{recipient}</span>{" "}
+                                at{" "}
+                                <span className="text-gray-400">
+                                    {new Date(timestamp * 1000).toLocaleString()}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+
             {/* Error Message */}
             {error && (
                 <div className="mt-4 p-3 bg-red-900/30 border-l-4 border-red-500 rounded-r text-red-200">
@@ -161,6 +191,7 @@ export default function TraceFlowUI() {
             )}
 
             {/* Results Section */}
+
             {!loading && filteredFlows.length > 0 && (
                 <div className="mt-8">
                     <div className="flex items-center justify-between mb-4">

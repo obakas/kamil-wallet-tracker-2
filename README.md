@@ -94,24 +94,6 @@ Copy code
 
 ---
 
-### Let me know if you want:
-- A logo/cover image (I can generate one),
-- To auto-link to your GitHub profile,
-- Or want to separate it into client/api folders more formally.
 
-This is **client-facing** and **investor-grade**—no fluff, just function. Ready to commit and push.
-
-
-
-
-
-
-
-
-Ask ChatGPT
-
-
-
-Tools
 
 
