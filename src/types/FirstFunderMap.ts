@@ -1,0 +1,1 @@
+export type FirstFunderMap = Record<string, { from: string; timestamp: number }>;

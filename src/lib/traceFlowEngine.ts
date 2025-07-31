@@ -1,16 +1,19 @@
+import { BINANCE_WALLETS } from "./binanceUtils";
+import { TraceFlowItem } from "@/types/traceFlowItem";
+import { FirstFunderMap } from "@/types/FirstFunderMap";
+import { ConvergencePoint } from "@/types/ConvergencePoint";
 
-export async function traceFlowEngine(wallets: string[]) {
+type ConvergenceMap = Record<string, ConvergencePoint>;
+
+type TraceFlowEngineResult = {
+    trace: TraceFlowItem[];
+    firstFunders: FirstFunderMap;
+    convergencePoints: ConvergenceMap;
+};
+
+export async function traceFlowEngine(wallets: string[]): Promise<TraceFlowEngineResult> {
     const QUICKNODE_RPC = process.env.NEXT_PUBLIC_QUIKNODE_M_RPC!;
-    const BINANCE_WALLETS = new Set([
-        '0x3f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be',
-        '0xd551234ae421e3bcba99a0da6d736074f22192ff',
-        '0x564286362092d8e7936f0549571a803b203aaced',
-        '0x0681d8db095565fe8a346fa0277bffde9c0edbbf',
-        '0xfe9e8709d3215310075d67e3ed32a380ccf451c8',
-        // Add more as you find them
-    ]);
-
-    const allTransfers: any[] = [];
+    const allTransfers: TraceFlowItem[] = [];
 
     for (const wallet of wallets) {
         const response = await fetch(QUICKNODE_RPC, {
@@ -46,7 +49,6 @@ export async function traceFlowEngine(wallets: string[]) {
             const parsed = tx.result;
 
             if (!parsed?.meta || !parsed?.transaction?.message) continue;
-
             const instructions = parsed.transaction.message.instructions;
 
             for (const ix of instructions) {
@@ -82,20 +84,41 @@ export async function traceFlowEngine(wallets: string[]) {
     }
 
     // Step: Identify first funders
-    const firstFunderMap: Record<string, { from: string, timestamp: number }> = {};
+    const firstFunderMap: FirstFunderMap = {};
 
     for (const tx of allTransfers) {
         const existing = firstFunderMap[tx.to];
-        if ((!existing || tx.timestamp < existing.timestamp) && (tx.amount > 0.001) && (tx.from !== tx.to)) {
+        if ((!existing || tx.timestamp < existing.timestamp) && tx.amount > 0.001 && tx.from !== tx.to) {
             firstFunderMap[tx.to] = { from: tx.from, timestamp: tx.timestamp };
         }
     }
 
-    // Step: Annotate transfers with isFirstFunder flag
     for (const tx of allTransfers) {
-        tx.isFirstFunder = firstFunderMap[tx.to]?.from === tx.from && firstFunderMap[tx.to]?.timestamp === tx.timestamp;
+        tx.isFirstFunder =
+            firstFunderMap[tx.to]?.from === tx.from &&
+            firstFunderMap[tx.to]?.timestamp === tx.timestamp;
     }
 
+    // Step: Detect Convergence Points
+    const receiverMap: Record<string, Set<string>> = {};
+    for (const tx of allTransfers) {
+        if (!receiverMap[tx.to]) receiverMap[tx.to] = new Set();
+        receiverMap[tx.to].add(tx.from);
+    }
 
-    return { trace: allTransfers, firstFunders: firstFunderMap };
+    const convergencePoints: ConvergenceMap = {};
+    for (const [wallet, sourcesSet] of Object.entries(receiverMap)) {
+        if (sourcesSet.size >= 2) {
+            convergencePoints[wallet] = {
+                sources: Array.from(sourcesSet),
+                count: sourcesSet.size,
+            };
+        }
+    }
+
+    return {
+        trace: allTransfers,
+        firstFunders: firstFunderMap,
+        convergencePoints,
+    };
 }
