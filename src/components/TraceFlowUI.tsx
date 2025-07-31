@@ -6,7 +6,8 @@ import { FlowTimelineTable } from "@/components/FlowTimelineTable";
 import { ClipboardCopyIcon } from "lucide-react";
 import { TraceFlowItem } from "@/types/traceFlowItem";
 import { FirstFunderMap } from "@/types/FirstFunderMap";
-import { ConvergencePoint } from "@/types/ConvergencePoint";
+import { ConvergenceTable } from "./ConvergenceTable";
+
 
 
 export default function TraceFlowUI() {
@@ -16,9 +17,8 @@ export default function TraceFlowUI() {
     const [flows, setFlows] = useState<TraceFlowItem[]>([]);
     const [error, setError] = useState("");
     const [firstFunders, setFirstFunders] = useState<FirstFunderMap>({});
-    const [convergencePoints, setConvergencePoints] = useState<Record<string, ConvergencePoint>>({});
-
-
+    const [convergencePoints, setConvergencePoints] = useState<Record<string, { sources: string[]; count: number }>>({});
+    const [activeTab, setActiveTab] = useState<'convergence' | 'flow'>('flow');
 
     const handleTrace = async () => {
         setLoading(true);
@@ -158,7 +158,7 @@ export default function TraceFlowUI() {
             {/* Action Button */}
             <button
                 className={`w-full py-3 px-4 rounded-xl font-medium text-white transition-all flex items-center justify-center mb-8
-                ${loading ? 'bg-blue-800 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'}`}
+            ${loading ? 'bg-blue-800 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'}`}
                 onClick={handleTrace}
                 disabled={loading}
             >
@@ -277,22 +277,60 @@ export default function TraceFlowUI() {
                 </div>
             )}
 
-            {/* Results Section */}
-            {!loading && filteredFlows.length > 0 && (
-                <div className="mt-8">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-100 flex items-center">
-                            <svg className="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            Transaction Flow
-                        </h3>
-                        <span className="text-sm bg-blue-900/50 text-blue-100 py-1 px-3 rounded-full font-medium">
-                            {filteredFlows.length} {filteredFlows.length === 1 ? 'transaction' : 'transactions'}
-                        </span>
+            {/* Results Section with Tabs */}
+            {(Object.keys(convergencePoints).length > 0 || filteredFlows.length > 0) && (
+                <div className="mt-6">
+                    <div className="border-b border-gray-700">
+                        <nav className="-mb-px flex space-x-8">
+                            {Object.keys(convergencePoints).length > 0 && (
+                                <button
+                                    onClick={() => setActiveTab('convergence')}
+                                    className={`py-3 px-4 border-b-2 font-medium text-sm ${activeTab === 'convergence' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-500'}`}
+                                >
+                                    <div className="flex items-center">
+                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 16h1.5a2.5 2.5 0 100-5H18v-3.5a2.5 2.5 0 00-5 0V16h-4v-3.5a2.5 2.5 0 00-5 0V16H3.5a2.5 2.5 0 100 5H8v3.5a2.5 2.5 0 105 0V21h4v3.5a2.5 2.5 0 105 0V21h1.5a2.5 2.5 0 100-5H18z" />
+                                        </svg>
+                                        Convergence Hubs
+                                        <span className="ml-2 bg-blue-900/50 text-blue-100 py-0.5 px-2 rounded-full text-xs">
+                                            {Object.keys(convergencePoints).length}
+                                        </span>
+                                    </div>
+                                </button>
+                            )}
+                            {filteredFlows.length > 0 && (
+                                <button
+                                    onClick={() => setActiveTab('flow')}
+                                    className={`py-3 px-4 border-b-2 font-medium text-sm ${activeTab === 'flow' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-500'}`}
+                                >
+                                    <div className="flex items-center">
+                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                        </svg>
+                                        Transaction Flow
+                                        <span className="ml-2 bg-blue-900/50 text-blue-100 py-0.5 px-2 rounded-full text-xs">
+                                            {filteredFlows.length}
+                                        </span>
+                                    </div>
+                                </button>
+                            )}
+                        </nav>
                     </div>
-                    <div className="border border-gray-700 rounded-xl overflow-hidden shadow-lg">
-                        <FlowTimelineTable data={filteredFlows} />
+
+                    <div className="mt-4">
+                        {/* Convergence Table */}
+                        {activeTab === 'convergence' && Object.keys(convergencePoints).length > 0 && (
+                            <div className="border border-gray-700 rounded-b-lg rounded-tr-lg overflow-hidden shadow-lg">
+                                <ConvergenceTable ConvergencePoints={convergencePoints} />
+                            </div>
+                        )}
+
+                        {/* Flow Timeline Table */}
+                        {activeTab === 'flow' && filteredFlows.length > 0 && (
+                            <div className="border border-gray-700 rounded-b-lg rounded-tr-lg overflow-hidden shadow-lg">
+                                <FlowTimelineTable data={filteredFlows} />
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

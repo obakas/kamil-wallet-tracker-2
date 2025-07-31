@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { shorten, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { saveAs } from "file-saver";
@@ -12,6 +12,30 @@ import { ClipboardCopyIcon } from "lucide-react";
 
 export const FlowTimelineTable = ({ data }: { data: TraceFlowItem[] }) => {
     const [tokenFilter, setTokenFilter] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    // 1. Filter data first
+    const filteredData = useMemo(() => {
+        if (!tokenFilter.trim()) return data;
+        return data.filter(
+            (flow) =>
+                flow.token?.toLowerCase() === tokenFilter.toLowerCase()
+        );
+    }, [tokenFilter, data]);
+
+    // 2. Then paginate it
+    const paginatedData = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        return filteredData.slice(start, end);
+    }, [filteredData, currentPage]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [tokenFilter]);
+
+
 
     // Extract unique tokens from the data
     const uniqueTokens = useMemo(() => {
@@ -22,17 +46,17 @@ export const FlowTimelineTable = ({ data }: { data: TraceFlowItem[] }) => {
     }, [data]);
 
     // Filter data by selected token
-    const filteredData = useMemo(() => {
-        if (!tokenFilter.trim()) return data;
-        return data.filter(
-            (flow) =>
-                flow.token?.toLowerCase() === tokenFilter.toLowerCase()
-        );
-    }, [tokenFilter, data]);
+    // const filteredData = useMemo(() => {
+    //     if (!tokenFilter.trim()) return data;
+    //     return data.filter(
+    //         (flow) =>
+    //             flow.token?.toLowerCase() === tokenFilter.toLowerCase()
+    //     );
+    // }, [tokenFilter, data]);
 
     const exportCSV = () => {
         const csv = Papa.unparse(
-            filteredData.map((entry, idx) => ({
+            paginatedData.map((entry, idx) => ({
                 SN: idx + 1,
                 From: entry.from,
                 To: entry.to,
@@ -51,7 +75,7 @@ export const FlowTimelineTable = ({ data }: { data: TraceFlowItem[] }) => {
         const doc = new jsPDF();
         autoTable(doc, {
             head: [["Step", "Sender", "Receiver", "Token", "Amount", "Timestamp", "Inflow", "Outflow"]],
-            body: filteredData.map((entry, idx) => [
+            body: paginatedData.map((entry, idx) => [
                 idx + 1,
                 shorten(entry.from),
                 shorten(entry.to),
@@ -72,6 +96,7 @@ export const FlowTimelineTable = ({ data }: { data: TraceFlowItem[] }) => {
         });
         doc.save("flow_timeline.pdf");
     };
+
 
     return (
         <div className="space-y-6">
@@ -152,7 +177,7 @@ export const FlowTimelineTable = ({ data }: { data: TraceFlowItem[] }) => {
             </div>
 
             {/* Table Section */}
-            <div className="overflow-x-auto"> 
+            <div className="overflow-x-auto">
                 <div className="overflow-hidden border border-gray-700 rounded-xl shadow-lg">
                     <table className="min-w-full divide-y divide-gray-700/50">
                         <thead className="bg-gray-800">
@@ -175,7 +200,7 @@ export const FlowTimelineTable = ({ data }: { data: TraceFlowItem[] }) => {
                         </thead>
                         <tbody className="bg-gray-800/50 divide-y divide-gray-700/30">
                             {filteredData.length > 0 ? (
-                                filteredData.map((flow, idx) => (
+                                paginatedData.map((flow, idx) => (
                                     <tr
                                         key={idx}
                                         className="hover:bg-gray-750/50 transition-colors group"
@@ -185,7 +210,9 @@ export const FlowTimelineTable = ({ data }: { data: TraceFlowItem[] }) => {
                                         <td className="px-2 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
                                             <div className="flex items-center gap-3">
                                                 <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gray-700/80 text-gray-300 group-hover:bg-gray-700">
-                                                    {idx + 1}
+                                                    {/* {idx + 1} */}
+                                                    {(currentPage - 1) * itemsPerPage + idx + 1}
+
                                                 </span>
                                             </div>
                                         </td>
@@ -319,24 +346,33 @@ export const FlowTimelineTable = ({ data }: { data: TraceFlowItem[] }) => {
             {filteredData.length > 10 && (
                 <div className="flex items-center justify-between px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg">
                     <div className="text-sm text-gray-400">
-                        Showing <span className="font-medium text-gray-300">1-10</span> of <span className="font-medium text-gray-300">{filteredData.length}</span>
+                        Showing{" "}
+                        <span className="font-medium text-gray-300">
+                            {(currentPage - 1) * itemsPerPage + 1}-
+                            {Math.min(currentPage * itemsPerPage, filteredData.length)}
+                        </span>{" "}
+                        of <span className="font-medium text-gray-300">{filteredData.length}</span>
                     </div>
                     <div className="flex gap-2">
                         <Button
                             variant="outline"
                             size="sm"
-                            disabled={true}
-                            className="text-gray-400 border-gray-600 hover:bg-gray-700/50"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
                         >
                             Previous
                         </Button>
                         <Button
                             variant="outline"
                             size="sm"
-                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50"
+                            disabled={currentPage * itemsPerPage >= filteredData.length}
+                            onClick={() => setCurrentPage((prev) => prev + 1)}
+                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
                         >
                             Next
                         </Button>
+
                     </div>
                 </div>
             )}
