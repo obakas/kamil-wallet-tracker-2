@@ -1,14 +1,15 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "./ui/Button";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { shorten, formatDate } from "@/lib/utils";
+import { shorten } from "@/lib/utils";
 
 
 type ConvergenceTableProps = {
     ConvergencePoints: Record<string, { sources: string[]; count: number }>;
+    onAddressClick?: (address: string) => void;//
 };
 
 export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergencePoints }) => {

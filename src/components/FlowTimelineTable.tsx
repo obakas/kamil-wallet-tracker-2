@@ -1,16 +1,21 @@
 "use client";
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { shorten, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { TraceFlowItem } from "@/types/traceFlowItem";
+// import { TraceFlowItem } from "@/types/traceFlowItem";
 import { ClipboardCopyIcon } from "lucide-react";
 
+type FlowTimelineTableProps = {
+  data: any[]; // Replace with your actual data type
+  onAddressClick?: (address: string) => void;
+};
 
-export const FlowTimelineTable = ({ data }: { data: TraceFlowItem[] }) => {
+
+export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTableProps) => {
     const [tokenFilter, setTokenFilter] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
