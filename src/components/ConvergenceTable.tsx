@@ -237,8 +237,13 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
-                        {entries.map(([wallet, { count, sources }]) => (
+                        {entries.map(([wallet, { count, sources }], idx) => (
                             <tr key={wallet} className="hover:bg-gray-800/30 transition-colors group">
+                                {/* Serial Number */}
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-400 text-sm">
+                                    {idx + 1}
+                                </td>
+                                
                                 {/* Wallet Address */}
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
