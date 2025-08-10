@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
-import { shorten, formatDate } from "@/lib/utils";
+import { shorten, formatDate, wrapAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
@@ -61,7 +61,7 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
 
     const exportCSV = () => {
         const csv = Papa.unparse(
-            paginatedData.map((entry, idx) => ({
+            data.map((entry, idx) => ({
                 SN: idx + 1,
                 From: entry.from,
                 To: entry.to,
@@ -80,10 +80,12 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
         const doc = new jsPDF();
         autoTable(doc, {
             head: [["Step", "Sender", "Receiver", "Token", "Amount", "Timestamp", "Inflow", "Outflow"]],
-            body: paginatedData.map((entry, idx) => [
+            body: data.map((entry, idx) => [
                 idx + 1,
-                shorten(entry.from),
-                shorten(entry.to),
+                // entry.from,
+                wrapAddress(entry.from),
+                // entry.to,
+                wrapAddress(entry.to),
                 entry.token,
                 entry.amount.toFixed(2),
                 formatDate(entry.timestamp),

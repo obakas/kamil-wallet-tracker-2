@@ -4,7 +4,7 @@ import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { shorten } from "@/lib/utils";
+import { shorten, wrapAddress } from "@/lib/utils";
 
 
 type ConvergenceTableProps = {
@@ -31,11 +31,11 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
 
     const exportCSV = () => {
         const csv = Papa.unparse(
-            filteredEntries.map(([wallet, { sources, count }], idx) => ({
+            entries.map(([wallet, { sources, count }], idx) => ({
                 SN: idx + 1,
                 Wallet: wallet,
                 "Source Count": count,
-                "Source Wallets": sources.join(" | "),
+                "Source Wallets": sources.join("\n"),
             }))
         );
 
@@ -49,7 +49,7 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
 
         autoTable(doc, {
             head: [["SN", "Wallet", "Source Count", "Source Wallets"]],
-            body: filteredEntries.map(([wallet, { sources, count }], idx) => [
+            body: entries.map(([wallet, { sources, count }], idx) => [
                 idx + 1,
                 shorten(wallet),
                 count,
@@ -294,4 +294,3 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
         </div>
     );
 };
-
