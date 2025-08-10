@@ -1,4 +1,5 @@
-import { useState } from "react";
+"use client";
+import { useState, useMemo, useEffect, Key } from "react";
 import { Button } from "./ui/Button";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
@@ -18,6 +19,28 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
     );
     const [minConnections, setMinConnections] = useState(1);
     const [searchWallet, setSearchWallet] = useState("");
+
+    const [tokenFilter, setTokenFilter] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    // 1. Filter data first
+    const filteredData = useMemo(() => {
+        if (!tokenFilter.trim()) return ConvergencePoints;
+        return ConvergencePoints.filteredEntries
+    }, [tokenFilter, ConvergencePoints]);
+
+    // 2. Then paginate it
+    const paginatedData = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const entriesArray = Object.entries(filteredData);
+        return entriesArray.slice(start, end);
+    }, [filteredData, currentPage]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [tokenFilter]);
 
     const filteredEntries = entries.filter(([wallet, { count }]) => {
         return (
@@ -237,13 +260,13 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
-                        {entries.map(([wallet, { count, sources }], idx) => (
+                        {paginatedData.map(([wallet, { count, sources }], idx) => (
                             <tr key={wallet} className="hover:bg-gray-800/30 transition-colors group">
                                 {/* Serial Number */}
                                 <td className="px-6 py-4 whitespace-nowrap text-gray-400 text-sm">
                                     {idx + 1}
                                 </td>
-                                
+
                                 {/* Wallet Address */}
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
@@ -290,7 +313,7 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
                                 {/* Source Wallets */}
                                 <td className="px-6 py-4">
                                     <div className="flex flex-wrap gap-1.5">
-                                        {sources.slice(0, 4).map((src) => (
+                                        {sources.slice(0, 4).map((src: string) => (
                                             <a
                                                 key={src}
                                                 href={`https://solscan.io/account/${src}`}
@@ -331,26 +354,40 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
                 </div>
             )}
 
-            {/* Footer */}
-            <div className="bg-gray-900/50 px-6 py-3 border-t border-gray-800 flex items-center justify-between">
-                <p className="text-xs text-gray-500">
-                    Showing <span className="font-medium text-gray-400">1-{entries.length}</span> of <span className="font-medium text-gray-400">{entries.length}</span>
-                </p>
-                <div className="flex space-x-2">
-                    <button className="px-2.5 py-1 rounded-md text-xs font-medium text-gray-400 bg-gray-800 border border-gray-700 hover:bg-gray-700/50 hover:text-gray-300 transition-colors disabled:opacity-50">
-                        <svg className="w-3.5 h-3.5 mr-1 -ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Previous
-                    </button>
-                    <button className="px-2.5 py-1 rounded-md text-xs font-medium text-gray-400 bg-gray-800 border border-gray-700 hover:bg-gray-700/50 hover:text-gray-300 transition-colors">
-                        Next
-                        <svg className="w-3.5 h-3.5 ml-1 -mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
+            {/* Pagination Controls (if applicable) */}
+            {filteredEntries.length > 10 && (
+                <div className="flex items-center justify-between px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg">
+                    <div className="text-sm text-gray-400">
+                        Showing{" "}
+                        <span className="font-medium text-gray-300">
+                            {(currentPage - 1) * itemsPerPage + 1}-
+                            {Math.min(currentPage * itemsPerPage, filteredEntries.length)}
+                        </span>{" "}
+                        of <span className="font-medium text-gray-300">{filteredEntries.length}</span>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage * itemsPerPage >= filteredEntries.length}
+                            onClick={() => setCurrentPage((prev) => prev + 1)}
+                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
+                        >
+                            Next
+                        </Button>
+
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
