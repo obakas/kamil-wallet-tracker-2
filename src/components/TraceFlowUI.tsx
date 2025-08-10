@@ -3,11 +3,12 @@
 
 import { useState, useEffect } from "react";
 import { FlowTimelineTable } from "@/components/FlowTimelineTable";
-import { ClipboardCopyIcon, ClipboardPasteIcon, XIcon, Info, Zap, ArrowRightIcon, ShareIcon, AlertCircle, Box, Download } from "lucide-react";
+import { ClipboardCopyIcon, ClipboardPasteIcon, XIcon, Info, Zap, ArrowRightIcon, ShareIcon, AlertCircle, Box, Download, CheckIcon, EditIcon } from "lucide-react";
 import { TraceFlowItem } from "@/types/traceFlowItem";
 import { FirstFunderMap } from "@/types/FirstFunderMap";
 import { ConvergenceTable } from "./ConvergenceTable";
 import { PatternMatchTable, PatternMatchResult } from "@/components/PatternMatchTable";
+import { BINANCE_WALLETS } from "@/lib/binanceUtils";
 
 
 
@@ -21,6 +22,12 @@ export default function TraceFlowUI() {
     const [convergencePoints, setConvergencePoints] = useState<Record<string, { sources: string[]; count: number }>>({});
     const [activeTab, setActiveTab] = useState<'convergence' | 'flow' | 'patterns'>('flow');
     const [repeatedPatterns, setRepeatedPatterns] = useState<PatternMatchResult[]>([]);
+    const [binanceWallets, setBinanceWallets] = useState<string[]>(Array.from(BINANCE_WALLETS));
+    const [isEditingWallets, setIsEditingWallets] = useState(false);
+    const [newWalletInput, setNewWalletInput] = useState("");
+
+
+    console.log("Initial Binance Wallets:", BINANCE_WALLETS);
 
 
 
@@ -113,17 +120,17 @@ export default function TraceFlowUI() {
         return [headers, ...rows].map(row => row.join(',')).join('\n');
     }
 
-    function downloadCSV(csv: string, filename: string) {
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
+    // function downloadCSV(csv: string, filename: string) {
+    //     const blob = new Blob([csv], { type: 'text/csv' });
+    //     const url = URL.createObjectURL(blob);
+    //     const a = document.createElement('a');
+    //     a.href = url;
+    //     a.download = filename;
+    //     document.body.appendChild(a);
+    //     a.click();
+    //     document.body.removeChild(a);
+    //     URL.revokeObjectURL(url);
+    // }
 
     // Utility function to truncate wallet addresses
     const truncateAddress = (address: string, startLength = 6, endLength = 4) => {
@@ -131,6 +138,31 @@ export default function TraceFlowUI() {
         if (address.length <= startLength + endLength) return address;
         return `${address.substring(0, startLength)}...${address.substring(address.length - endLength)}`;
     };
+
+
+    // Load saved wallets on init
+    useEffect(() => {
+        const savedWallets = localStorage.getItem("binanceWallets");
+        if (savedWallets) setBinanceWallets(JSON.parse(savedWallets));
+    }, []);
+
+    // Save on update
+    const updateWallets = (wallets: string[]) => {
+        setBinanceWallets(wallets);
+        localStorage.setItem("binanceWallets", JSON.stringify(wallets));
+    };
+
+    // In table rendering logic:
+    const isBinanceWallet = (address: string) =>
+        binanceWallets.some(w => w.toLowerCase() === address.toLowerCase());
+
+    // Add a Binance badge:
+    // Usage example (inside a render loop):
+    // {isBinanceWallet(entry.address) && (
+    //     <span className="ml-2 text-xs bg-yellow-900/30 text-yellow-300 px-1.5 py-0.5 rounded">
+    //         Binance
+    //     </span>
+    // )}
 
 
     return (
@@ -240,6 +272,144 @@ export default function TraceFlowUI() {
                     </div>
                 </div>
             </div>
+
+            
+            {/* Binance Wallets Section */}
+            <div className="bg-gray-800/40 p-5 rounded-xl border border-gray-700/50 mb-6">
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium text-gray-300 flex items-center">
+                        <svg className="w-4 h-4 mr-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        Binance Wallets ({binanceWallets.length})
+                    </h3>
+                    <button
+                        onClick={() => setIsEditingWallets(!isEditingWallets)}
+                        className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded flex items-center gap-1 transition-colors"
+                    >
+                        {isEditingWallets ? <CheckIcon className="w-3 h-3" /> : <EditIcon className="w-3 h-3" />}
+                        {isEditingWallets ? "Done" : "Edit"}
+                    </button>
+                </div>
+
+                {isEditingWallets ? (
+                    <div className="space-y-3">
+                        <textarea
+                            className="w-full p-2 border border-gray-600 rounded-lg bg-gray-700/30 text-gray-100 font-mono text-sm"
+                            value={newWalletInput || binanceWallets.join("\n")}
+                            onChange={(e) => setNewWalletInput(e.target.value)}
+                            placeholder="One wallet per line"
+                            rows={5}
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    const updatedWallets = newWalletInput.split("\n").filter(w => w.trim());
+                                    setBinanceWallets(updatedWallets);
+                                    setIsEditingWallets(false);
+                                }}
+                                className="text-xs bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded"
+                            >
+                                Save Changes
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsEditingWallets(false);
+                                    setNewWalletInput("");
+                                }}
+                                className="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {binanceWallets.map((wallet, i) => (
+                            <div key={i} className="flex items-center justify-between p-2 bg-gray-700/20 rounded hover:bg-gray-700/40">
+                                <span className="font-mono text-sm text-gray-300">
+                                    {truncateAddress(wallet, 8, 6)}
+                                </span>
+                                <div className="flex gap-1">
+                                    <button
+                                        onClick={() => navigator.clipboard.writeText(wallet)}
+                                        className="text-gray-400 hover:text-blue-400 transition-colors p-1"
+                                        title="Copy"
+                                    >
+                                        <ClipboardCopyIcon className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+            {/* <div className="bg-gray-800/40 p-5 rounded-xl border border-gray-700/50 mb-6">
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium text-gray-300 flex items-center">
+                        <svg className="w-4 h-4 mr-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        Binance Wallets
+                    </h3>
+                    <button
+                        onClick={() => setIsEditingWallets(!isEditingWallets)}
+                        className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded flex items-center gap-1 transition-colors"
+                    >
+                        {isEditingWallets ? <CheckIcon className="w-3 h-3" /> : <EditIcon className="w-3 h-3" />}
+                        {isEditingWallets ? "Save" : "Edit"}
+                    </button>
+                </div>
+
+                {isEditingWallets ? (
+                    <div className="space-y-3">
+                        <textarea
+                            className="w-full p-2 border border-gray-600 rounded-lg bg-gray-700/30 text-gray-100 font-mono text-sm"
+                            value={newWalletInput}
+                            onChange={(e) => setNewWalletInput(e.target.value)}
+                            placeholder="Add wallets (one per line)"
+                            rows={4}
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    const wallets = newWalletInput.split('\n').filter(w => w.trim());
+                                    setBinanceWallets(wallets);
+                                    setIsEditingWallets(false);
+                                }}
+                                className="text-xs bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded"
+                            >
+                                Confirm
+                            </button>
+                            <button
+                                onClick={() => setIsEditingWallets(false)}
+                                className="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {binanceWallets.length > 0 ? (
+                            binanceWallets.map((wallet, i) => (
+                                <div key={i} className="flex items-center justify-between p-2 bg-gray-700/20 rounded">
+                                    <span className="font-mono text-sm text-gray-300">{truncateAddress(wallet, 8, 6)}</span>
+                                    <button
+                                        onClick={() => navigator.clipboard.writeText(wallet)}
+                                        className="text-gray-400 hover:text-blue-400 transition-colors p-1"
+                                        title="Copy"
+                                    >
+                                        <ClipboardCopyIcon className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-xs text-gray-500">No Binance wallets configured.</p>
+                        )}
+                    </div>
+                )}
+            </div> */}
 
             {/* Action Button */}
             <button
@@ -475,7 +645,7 @@ export default function TraceFlowUI() {
                                             <Box className="w-5 h-5 mr-2 text-purple-400" />
                                             Suspicious Activity Patterns
                                         </h2>
-                                        <div className="flex gap-2">
+                                        {/* <div className="flex gap-2">
                                             <button
                                                 onClick={() => {
                                                     const csv = convertPatternsToCSV(repeatedPatterns);
@@ -486,7 +656,7 @@ export default function TraceFlowUI() {
                                                 <Download className="w-4 h-4" />
                                                 Export CSV
                                             </button>
-                                        </div>
+                                        </div> */}
                                     </div>
                                     <PatternMatchTable
                                         results={repeatedPatterns}

@@ -6,6 +6,7 @@ export const BINANCE_WALLETS = new Set([
     '0x564286362092d8e7936f0549571a803b203aaced',
     '0x0681d8db095565fe8a346fa0277bffde9c0edbbf',
     '0xfe9e8709d3215310075d67e3ed32a380ccf451c8',
+    'GiN7MRETkJduFrmZkxMHEbqd9u2qHRtpWDsUiCmodC1p'
     // Add more as you find them
 ]);
 

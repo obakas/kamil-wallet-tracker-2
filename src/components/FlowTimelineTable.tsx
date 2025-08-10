@@ -50,14 +50,6 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
         return tokens.sort((a, b) => a.localeCompare(b));
     }, [data]);
 
-    // Filter data by selected token
-    // const filteredData = useMemo(() => {
-    //     if (!tokenFilter.trim()) return data;
-    //     return data.filter(
-    //         (flow) =>
-    //             flow.token?.toLowerCase() === tokenFilter.toLowerCase()
-    //     );
-    // }, [tokenFilter, data]);
 
     const exportCSV = () => {
         const csv = Papa.unparse(
