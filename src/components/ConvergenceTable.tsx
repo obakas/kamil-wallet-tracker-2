@@ -30,18 +30,26 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
     if (!entries.length) return null;
 
     const exportCSV = () => {
-        const csv = Papa.unparse(
-            entries.map(([wallet, { sources, count }], idx) => ({
-                SN: idx + 1,
-                Wallet: wallet,
-                "Source Count": count,
-                "Source Wallets": sources.join("\n"),
-            }))
-        );
+        // Find the max number of sources across all entries
+        const maxSources = Math.max(...entries.map(([_, { sources }]) => sources.length));
+
+        // Create column headers dynamically: Source Wallet 1, Source Wallet 2, ...
+        const headers = Array.from({ length: maxSources }, (_, i) => `Source Wallet ${i + 1}`);
+
+        // Build CSV rows
+        const csv = Papa.unparse({
+            fields: ["SN", "Wallet", "Source Count", ...headers],
+            data: entries.map(([wallet, { sources, count }], idx) => {
+                // Fill missing slots with empty strings so all rows align
+                const sourceCols = Array.from({ length: maxSources }, (_, i) => sources[i] || "");
+                return [idx + 1, wallet, count, ...sourceCols];
+            })
+        });
 
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         saveAs(blob, `convergence_hubs_${Date.now()}.csv`);
     };
+
 
 
     const exportPDF = () => {
@@ -49,23 +57,69 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
 
         autoTable(doc, {
             head: [["SN", "Wallet", "Source Count", "Source Wallets"]],
-            body: entries.map(([wallet, { sources, count }], idx) => [
-                idx + 1,
-                shorten(wallet),
-                count,
-                sources.slice(0, 5).map(shorten).join(", ") + (sources.length > 5 ? "..." : ""),
-            ]),
+            body: entries.map(([wallet, { sources, count }], idx) => {
+                const wrappedWallet = wrapAddress(wallet);
+
+                // Pass sources as an array of strings so they display vertically
+                // const shortenedSources = sources.map(shorten);
+                const shortenedSources = sources; // full addresses, no shorten()
+
+
+                return [
+                    { content: idx + 1, styles: { valign: 'top' } },
+                    { content: wrappedWallet, styles: { textColor: [6, 69, 173], valign: 'top' } },
+                    { content: count, styles: { valign: 'top' } },
+                    { content: shortenedSources.join("\n"), styles: { valign: 'top' } } // line breaks
+                ];
+            }),
+            didDrawCell: (data) => {
+                if (data.section !== 'body') return;
+
+                const rowIndex = data.row.index;
+                if (!entries[rowIndex]) return;
+
+                // Clickable main wallet
+                if (data.column.index === 1) {
+                    const originalWallet = entries[rowIndex][0];
+                    doc.link(
+                        data.cell.x,
+                        data.cell.y,
+                        data.cell.width,
+                        data.cell.height,
+                        { url: `https://solscan.io/account/${originalWallet}` }
+                    );
+                }
+
+                // Clickable source wallets
+                if (data.column.index === 3) {
+                    const sources = entries[rowIndex][1].sources;
+                    let currentY = data.cell.y;
+
+                    sources.forEach((source) => {
+                        doc.link(
+                            data.cell.x,
+                            currentY,
+                            data.cell.width,
+                            doc.getLineHeight(), // height per wallet
+                            { url: `https://solscan.io/account/${source}` }
+                        );
+                        currentY += doc.getLineHeight();
+                    });
+                }
+            },
             headStyles: {
-                fillColor: [59, 130, 246], // blue-500
+                fillColor: [59, 130, 246],
                 textColor: 255,
                 fontStyle: 'bold'
             },
             alternateRowStyles: {
-                fillColor: [249, 250, 251] // gray-50
+                fillColor: [249, 250, 251]
             },
             styles: {
                 fontSize: 8,
-                cellPadding: 2
+                cellPadding: 2,
+                overflow: 'linebreak',
+                cellWidth: 'wrap',
             },
         });
 
@@ -176,6 +230,7 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
                 <table className="w-full">
                     <thead className="bg-gray-800/50">
                         <tr className="text-left text-sm font-medium text-gray-400">
+                            <th className="px-6 py-3">S/N</th>
                             <th className="px-6 py-3">Wallet</th>
                             <th className="px-6 py-3 text-right">Incoming</th>
                             <th className="px-6 py-3">Source Wallets</th>
