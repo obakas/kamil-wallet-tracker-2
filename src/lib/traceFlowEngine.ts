@@ -1,13 +1,10 @@
-import { BINANCE_WALLETS } from "./binanceUtils";
+import { HARDCODED_BINANCE_WALLETS } from "./binanceUtils";
 import { TraceFlowItem } from "@/types/traceFlowItem";
 import { FirstFunderMap } from "@/types/FirstFunderMap";
 import { ConvergencePoint } from "@/types/ConvergencePoint";
 import { detectRepeatedPatterns } from "@/lib/patternDetectionEngine";
 import { resolveTokenSymbol } from "@/lib/tokenResolver";
 import { Connection, PublicKey } from "@solana/web3.js";
-
-
-
 
 
 type ConvergenceMap = Record<string, ConvergencePoint>;
@@ -19,157 +16,256 @@ type TraceFlowEngineResult = {
     repeatedPatterns: ReturnType<typeof detectRepeatedPatterns>;
 };
 
-
-// const RPC_ENDPOINT = process.env.NEXT_PUBLIC_QUIKNODE_M_RPC!;
-// export const solanaConnection = new Connection(RPC_ENDPOINT);
-// const connection = new Connection(RPC_ENDPOINT);
-
-// async function getMintFromTokenAccount(tokenAccount: string): Promise<string | null> {
-//     try {
-//         const info = await connection.getParsedAccountInfo(new PublicKey(tokenAccount));
-//         const parsed = (info.value?.data as any)?.parsed;
-//         return parsed?.info?.mint || null;
-//     } catch (err) {
-//         console.error("Failed to fetch mint for token account", tokenAccount, err);
-//         return null;
-//     }
-// }
-
 const RPC_ENDPOINT = process.env.NEXT_PUBLIC_QUIKNODE_M_RPC!;
 export const solanaConnection = new Connection(RPC_ENDPOINT);
-// const connection = new Connection(RPC_ENDPOINT);
-export async function getMintFromTokenAccount(tokenAccount: string): Promise<string | null> {
+
+function isBinanceAddress(addr?: string | null) {
+    if (!addr) return false;
     try {
-        const accountInfo = await solanaConnection.getParsedAccountInfo(new PublicKey(tokenAccount));
-        const data = accountInfo.value?.data;
-        if (
-            data &&
-            typeof data === "object" &&
-            "parsed" in data &&
-            data.parsed.info &&
-            data.parsed.info.mint
-        ) {
-            return data.parsed.info.mint as string;
-        }
-        return null;
+        return HARDCODED_BINANCE_WALLETS.has(addr.toLowerCase());
     } catch (e) {
-        console.error("Failed to fetch mint from token account:", e);
-        return null;
+        return HARDCODED_BINANCE_WALLETS.has(addr);
     }
 }
 
+/**
+ * traceFlowEngine
+ * - Supports SOL (native) transfers (lamports)
+ * - Supports SPL token transfers by parsing instructions AND/token balance diffs (pre/post)
+ * - Accepts an optional tokenFilter which can be: symbol (e.g. "USDC"), "SOL", or a token mint address
+ */
+export async function traceFlowEngine(
+    wallets: string[],
+    tokenFilter?: string | null
+): Promise<TraceFlowEngineResult> {
+    const QUICKNODE_RPC = RPC_ENDPOINT;
 
-export async function traceFlowEngine(wallets: string[]): Promise<TraceFlowEngineResult> {
-    const QUICKNODE_RPC = process.env.NEXT_PUBLIC_QUIKNODE_M_RPC!;
     const allTransfers: TraceFlowItem[] = [];
 
+    // Normalize wallet list for quick checks
+    const walletSet = new Set(wallets.map((w) => w.toLowerCase()));
+
+    // helper to check token filter (symbol or mint)
+    const tokenFilterNormalized = tokenFilter ? tokenFilter.trim().toLowerCase() : null;
+    const matchesTokenFilter = (tokenSymbol?: string | null, mint?: string | null) => {
+        if (!tokenFilterNormalized) return true;
+        if (!tokenSymbol && !mint) return false;
+        if (tokenSymbol && tokenSymbol.toLowerCase() === tokenFilterNormalized) return true;
+        if (mint && mint.toLowerCase() === tokenFilterNormalized) return true;
+        return false;
+    };
+
+    // We'll fetch signatures per wallet (limit can be increased later)
+    const signaturesPerWallet: Record<string, Array<{ signature: string; blockTime?: number | null }>> = {};
+
     for (const wallet of wallets) {
-        const response = await fetch(QUICKNODE_RPC, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                jsonrpc: "2.0",
-                id: 1,
-                method: "getSignaturesForAddress",
-                params: [wallet, { limit: 100 }],
-            }),
-        });
-
-        const sigs = await response.json();
-        const signatures = sigs.result?.map((s: any) => ({
-            signature: s.signature,
-            blockTime: s.blockTime,
-        })) ?? [];
-
-        for (const { signature, blockTime } of signatures) {
-            const txDetails = await fetch(QUICKNODE_RPC, {
+        try {
+            const response = await fetch(QUICKNODE_RPC, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     jsonrpc: "2.0",
                     id: 1,
-                    method: "getTransaction",
-                    params: [signature, { encoding: "jsonParsed" }],
+                    method: "getSignaturesForAddress",
+                    params: [wallet, { limit: 200 }],
                 }),
             });
 
-            const tx = await txDetails.json();
-            const parsed = tx.result;
+            const sigs = await response.json();
+            signaturesPerWallet[wallet] =
+                sigs.result?.map((s: any) => ({ signature: s.signature, blockTime: s.blockTime })) ?? [];
+        } catch (e) {
+            console.error("Failed to fetch signatures for", wallet, e);
+            signaturesPerWallet[wallet] = [];
+        }
+    }
 
-            if (!parsed?.meta || !parsed?.transaction?.message) continue;
-            const instructions = parsed.transaction.message.instructions;
+    // Flatten unique signatures (avoid duplicate work when wallets overlap)
+    const uniqueSigs = new Map<string, number | null>();
+    for (const sarr of Object.values(signaturesPerWallet)) {
+        for (const s of sarr) uniqueSigs.set(s.signature, s.blockTime ?? null);
+    }
+
+    const sigList = Array.from(uniqueSigs.entries());
+
+    // Fetch transactions in parallel but in reasonable batches to avoid RPC throttling
+    const BATCH = 20;
+    for (let i = 0; i < sigList.length; i += BATCH) {
+        const batch = sigList.slice(i, i + BATCH);
+
+        const promises = batch.map(async ([signature, blockTime]) => {
+            try {
+                const txDetails = await fetch(QUICKNODE_RPC, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        jsonrpc: "2.0",
+                        id: 1,
+                        method: "getTransaction",
+                        params: [signature, { encoding: "jsonParsed" }],
+                    }),
+                });
+
+                const txJson = await txDetails.json();
+                return { signature, parsed: txJson.result };
+            } catch (e) {
+                console.error("Failed to fetch tx", signature, e);
+                return null;
+            }
+        });
+
+        const results = await Promise.all(promises);
+
+        for (const r of results) {
+            if (!r || !r.parsed) continue;
+            const tx = r.parsed;
+            const blockTime = tx.blockTime || undefined;
+
+            // Basic guards
+            if (!tx.meta || !tx.transaction || !tx.transaction.message) continue;
+
+            // 1) Parse instructions for clear SPL transfer events (preferred)
+            const instructions = tx.transaction.message.instructions || [];
 
             for (const ix of instructions) {
-                if (ix.program === "spl-token" && ix.parsed?.type === "transfer") {
-                    const { source, destination, amount } = ix.parsed.info;
-                    const mint = await getMintFromTokenAccount(source);
+                try {
+                    // spl-token transfer (explicit)
+                    if (ix.program === "spl-token" && ix.parsed?.type === "transfer") {
+                        const info = ix.parsed.info;
+                        const source = info.source;
+                        const destination = info.destination;
+                        const rawAmount = Number(info.amount);
 
-                    // if (!mint) {
-                    //     console.warn("Skipping SPL transfer with null mint. Source:", source);
-                    //     continue;
-                    // }
+                        // Try to resolve mint symbol using postTokenBalances where possible
+                        // find mint by matching account index in postTokenBalances
+                        const accountIndex = ix.account; // sometimes not available
 
-                    // console.log("Resolving mint:", mint);
-                    // const tokenSymbol = mint ? await resolveTokenSymbol(mint : "UNKNOWN";
-                    // const tokenSymbol = await resolveTokenSymbol(mint ?? ""); 
+                        // fallback: try to find the mint by looking through postTokenBalances for the destination account
+                        let mint: string | null = null;
+                        if (tx.meta.postTokenBalances) {
+                            const match = tx.meta.postTokenBalances.find((p: any) => p.accountIndex === ix.account || p.owner === destination);
+                            if (match) mint = match.mint;
+                        }
 
-                    // const tokenSymbol = await resolveTokenSymbol(mint);
+                        const tokenSymbol = mint ? await resolveTokenSymbol(mint) : "UNKNOWN";
 
-                    const tokenSymbol = mint ? await resolveTokenSymbol(mint) : "SOL";
-                    // console.log("Resolved symbol:", tokenSymbol);
-                    // console.log("Parsed transfer ix:", JSON.stringify(ix, null, 2));
+                        // amounts from parsed spl token transfers are in raw smallest unit; try to convert using ui amount where possible
+                        // fallback to rawAmount if ui amount not available
+                        const uiAmount = (() => {
+                            const pb = tx.meta.postTokenBalances?.find((p: any) => p.owner === destination && p.mint === mint);
+                            const pre = tx.meta.preTokenBalances?.find((p: any) => p.owner === destination && p.mint === mint);
+                            if (pb && pb.uiTokenAmount && typeof pb.uiTokenAmount.uiAmount === "number") return pb.uiTokenAmount.uiAmount;
+                            if (pre && pre.uiTokenAmount && typeof pre.uiTokenAmount.uiAmount === "number") return Math.abs((pb?.uiTokenAmount?.uiAmount || 0) - (pre.uiTokenAmount.uiAmount || 0));
+                            return rawAmount;
+                        })();
 
+                        // filter by tokenFilter (symbol or mint)
+                        if (!matchesTokenFilter(tokenSymbol, mint)) continue;
 
+                        allTransfers.push({
+                            from: source,
+                            to: destination,
+                            token: tokenSymbol || mint || "UNKNOWN",
+                            amount: Number(uiAmount),
+                            timestamp: blockTime || 0,
+                            isBinanceInflow: isBinanceAddress(destination),
+                            isBinanceOutflow: isBinanceAddress(source),
+                        });
+                    }
 
-                    allTransfers.push({
-                        from: source,
-                        to: destination,
-                        token: tokenSymbol,
-                        amount: Number(amount),
-                        timestamp: blockTime || 0,
-                        isBinanceInflow: BINANCE_WALLETS.has(destination),
-                        isBinanceOutflow: BINANCE_WALLETS.has(source),
-                    });
+                    // system transfer (native SOL)
+                    if (ix.program === "system" && ix.parsed?.type === "transfer") {
+                        const { source, destination, lamports } = ix.parsed.info;
+                        const amountInSol = Number(lamports) / 1e9;
+
+                        if (!matchesTokenFilter("SOL", null)) continue;
+
+                        allTransfers.push({
+                            from: source,
+                            to: destination,
+                            token: "SOL",
+                            amount: Number(amountInSol),
+                            timestamp: blockTime || 0,
+                            isBinanceInflow: isBinanceAddress(destination),
+                            isBinanceOutflow: isBinanceAddress(source),
+                        });
+                    }
+                } catch (e) {
+                    // don't let one instruction break the whole tx
+                    console.warn("instruction parse error", e);
                 }
+            }
 
-                if (ix.program === "system" && ix.parsed?.type === "transfer") {
-                    const { source, destination, lamports } = ix.parsed.info;
+            // 2) Use preTokenBalances/postTokenBalances diffs to catch SPL movements that might have been opaque
+            const preTokenBalances = tx.meta.preTokenBalances || [];
+            const postTokenBalances = tx.meta.postTokenBalances || [];
 
-                    allTransfers.push({
-                        from: source,
-                        to: destination,
-                        token: "SOL",
-                        amount: Number(lamports) / 1e9,
-                        timestamp: blockTime || 0,
-                        isBinanceInflow: BINANCE_WALLETS.has(destination),
-                        isBinanceOutflow: BINANCE_WALLETS.has(source),
-                    });
+            for (const post of postTokenBalances) {
+                try {
+                    const pre = preTokenBalances.find((p: any) => p.accountIndex === post.accountIndex && p.mint === post.mint);
+                    const preAmt = pre?.uiTokenAmount?.uiAmount || 0;
+                    const postAmt = post?.uiTokenAmount?.uiAmount || 0;
+                    const diff = Number(postAmt - preAmt);
+                    if (!diff) continue;
+
+                    const owner = post.owner || null; // owner could be null for some accounts
+                    const mint = post.mint;
+                    const tokenSymbol = await resolveTokenSymbol(mint).catch(() => mint);
+
+                    // Only include if matches token filter
+                    if (!matchesTokenFilter(tokenSymbol || null, mint)) continue;
+
+                    if (diff > 0) {
+                        // incoming to 'owner'
+                        allTransfers.push({
+                            from: "UNKNOWN", // we couldn't deduce exact source here
+                            to: owner || "UNKNOWN",
+                            token: tokenSymbol || mint,
+                            amount: diff,
+                            timestamp: blockTime || 0,
+                            isBinanceInflow: isBinanceAddress(owner),
+                            isBinanceOutflow: false,
+                        });
+                    } else if (diff < 0) {
+                        // outgoing from 'owner'
+                        allTransfers.push({
+                            from: owner || "UNKNOWN",
+                            to: "UNKNOWN",
+                            token: tokenSymbol || mint,
+                            amount: Math.abs(diff),
+                            timestamp: blockTime || 0,
+                            isBinanceInflow: false,
+                            isBinanceOutflow: isBinanceAddress(owner),
+                        });
+                    }
+                } catch (e) {
+                    console.warn("token balance diff parse error", e);
                 }
             }
         }
     }
 
-    // Step: Identify first funders
+    // STEP: Identify first funders (same logic as before, but now works for SPL tokens too)
     const firstFunderMap: FirstFunderMap = {};
 
     for (const tx of allTransfers) {
         const existing = firstFunderMap[tx.to];
-        if ((!existing || tx.timestamp < existing.timestamp) && tx.amount > 0.001 && tx.from !== tx.to) {
+        if ((!existing || tx.timestamp < existing.timestamp) && tx.amount > 0.000001 && tx.from !== tx.to) {
             firstFunderMap[tx.to] = { from: tx.from, timestamp: tx.timestamp };
         }
     }
 
     for (const tx of allTransfers) {
         tx.isFirstFunder =
-            firstFunderMap[tx.to]?.from === tx.from &&
-            firstFunderMap[tx.to]?.timestamp === tx.timestamp;
+            firstFunderMap[tx.to]?.from === tx.from && firstFunderMap[tx.to]?.timestamp === tx.timestamp;
     }
 
-    // Step: Detect Convergence Points
+    // STEP: Detect Convergence Points
     const receiverMap: Record<string, Set<string>> = {};
     for (const tx of allTransfers) {
+        if (!tx.to) continue;
         if (!receiverMap[tx.to]) receiverMap[tx.to] = new Set();
-        receiverMap[tx.to].add(tx.from);
+        if (tx.from) receiverMap[tx.to].add(tx.from);
     }
 
     const convergencePoints: ConvergenceMap = {};
@@ -182,21 +278,9 @@ export async function traceFlowEngine(wallets: string[]): Promise<TraceFlowEngin
         }
     }
 
-    //     if (!tokenMap[normalizedMint]) {
-    //     console.warn("Unmatched token:", normalizedMint);
-    // }
-
-
-    const known = "So11111111111111111111111111111111111111112"; // SOL
-    console.log("Test resolve known:", await resolveTokenSymbol(known));
-
-    // Step: Detect Repeated Patterns
+    // Step: Detect Repeated Patterns (use your existing engine)
     const repeatedPatterns = detectRepeatedPatterns(allTransfers);
     console.log("🔥 REPEATED PATTERNS DETECTED:", repeatedPatterns);
-
-
-
-
 
     return {
         trace: allTransfers,

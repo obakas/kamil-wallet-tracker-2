@@ -7,12 +7,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Button } from "@/components/ui/Button";
 
-// export type PatternMatchResult = {
-//     wallet: string;
-//     tokens: string[];
-//     flags: string[];
-//     score: number;
-// };
 
 export type PatternMatchResult = {
     wallet: string;

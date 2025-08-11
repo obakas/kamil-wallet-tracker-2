@@ -8,7 +8,7 @@ import { TraceFlowItem } from "@/types/traceFlowItem";
 import { FirstFunderMap } from "@/types/FirstFunderMap";
 import { ConvergenceTable } from "./ConvergenceTable";
 import { PatternMatchTable, PatternMatchResult } from "@/components/PatternMatchTable";
-import { BINANCE_WALLETS } from "@/lib/binanceUtils";
+import { HARDCODED_BINANCE_WALLETS } from "@/lib/binanceUtils";
 
 
 
@@ -22,12 +22,83 @@ export default function TraceFlowUI() {
     const [convergencePoints, setConvergencePoints] = useState<Record<string, { sources: string[]; count: number }>>({});
     const [activeTab, setActiveTab] = useState<'convergence' | 'flow' | 'patterns'>('flow');
     const [repeatedPatterns, setRepeatedPatterns] = useState<PatternMatchResult[]>([]);
-    const [binanceWallets, setBinanceWallets] = useState<string[]>(Array.from(BINANCE_WALLETS));
+    const [binanceWallets, setBinanceWallets] = useState<string[]>(Array.from(HARDCODED_BINANCE_WALLETS));
     const [isEditingWallets, setIsEditingWallets] = useState(false);
     const [newWalletInput, setNewWalletInput] = useState("");
 
+    // const [walletAddress, setWalletAddress] = useState('');
+    // const [isLoading, setIsLoading] = useState(false);
+    // const [result, setResult] = useState<any>(null);
 
-    console.log("Initial Binance Wallets:", BINANCE_WALLETS);
+    // const handleSaveWallets = async () => {
+    //     setIsLoading(true);
+    //     setError("");
+
+    //     try {
+    //         const updatedWallets = newWalletInput
+    //             .split("\n")
+    //             .filter(w => w.trim());
+
+    //         const response = await fetch('/api/binance/wallets', {
+    //             method: 'PUT',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             },
+    //             body: JSON.stringify({ wallets: updatedWallets }),
+    //         });
+
+    //         if (!response.ok) {
+    //             const errorData = await response.json();
+    //             throw new Error(errorData.message || 'Failed to save wallets');
+    //         }
+
+    //         const data = await response.json();
+    //         setBinanceWallets(data.wallets); // Use the validated wallets from server
+    //         setIsEditingWallets(false);
+    //         setNewWalletInput("");
+    //         setResult({ success: true, count: data.wallets.length });
+
+    //     } catch (err) {
+    //         setError(err instanceof Error ? err.message : 'Save failed');
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // };
+
+    // const handleSaveWallet = async (e: React.FormEvent) => {
+    //     e.preventDefault();
+    //     setIsLoading(true);
+    //     setResult(null);
+    //     setResult(null);
+
+    //     try {
+    //         const response = await fetch('/api/add-binance', {
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             },
+    //             body: JSON.stringify({ walletAddress }),
+    //         });
+
+    //         const data = await response.json();
+
+    //         console.log("Response data:", data);
+
+    //         if (!response.ok) {
+    //             throw new Error(data.error || 'Failed to add wallet');
+    //         }
+
+    //         setResult(data);
+    //         setWalletAddress('');
+    //     } catch (err) {
+    //         setError(err instanceof Error ? err.message : 'Unknown error occurred');
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // };
+
+
+    // console.log("Initial Binance Wallets:", BINANCE_WALLETS);
 
 
 
@@ -108,29 +179,7 @@ export default function TraceFlowUI() {
         console.log("Updated repeatedPatterns:", repeatedPatterns);
     }, [repeatedPatterns]);
 
-    function convertPatternsToCSV(patterns: PatternMatchResult[]): string {
-        const headers = ['Wallet', 'Pattern Type', 'Tokens', 'Score'];
-        const rows = patterns.map(p => [
-            p.wallet,
-            p.pattern,
-            p.tokens.join('; '),
-            p.score.toString()
-        ]);
 
-        return [headers, ...rows].map(row => row.join(',')).join('\n');
-    }
-
-    // function downloadCSV(csv: string, filename: string) {
-    //     const blob = new Blob([csv], { type: 'text/csv' });
-    //     const url = URL.createObjectURL(blob);
-    //     const a = document.createElement('a');
-    //     a.href = url;
-    //     a.download = filename;
-    //     document.body.appendChild(a);
-    //     a.click();
-    //     document.body.removeChild(a);
-    //     URL.revokeObjectURL(url);
-    // }
 
     // Utility function to truncate wallet addresses
     const truncateAddress = (address: string, startLength = 6, endLength = 4) => {
@@ -156,13 +205,6 @@ export default function TraceFlowUI() {
     const isBinanceWallet = (address: string) =>
         binanceWallets.some(w => w.toLowerCase() === address.toLowerCase());
 
-    // Add a Binance badge:
-    // Usage example (inside a render loop):
-    // {isBinanceWallet(entry.address) && (
-    //     <span className="ml-2 text-xs bg-yellow-900/30 text-yellow-300 px-1.5 py-0.5 rounded">
-    //         Binance
-    //     </span>
-    // )}
 
 
     return (
@@ -273,7 +315,7 @@ export default function TraceFlowUI() {
                 </div>
             </div>
 
-            
+
             {/* Binance Wallets Section */}
             <div className="bg-gray-800/40 p-5 rounded-xl border border-gray-700/50 mb-6">
                 <div className="flex items-center justify-between mb-3">
@@ -302,7 +344,47 @@ export default function TraceFlowUI() {
                             rows={5}
                         />
                         <div className="flex gap-2">
-                            <button
+                            {/* <button
+                                onClick={async () => {
+                                    const updatedWallets = newWalletInput
+                                        .split("\n")
+                                        .filter(w => w.trim());
+
+                                    // Update local state first
+                                    setBinanceWallets(updatedWallets);
+                                    setIsEditingWallets(false);
+
+                                    // Save to API
+                                    try {
+                                        setIsLoading(true);
+                                        const response = await fetch('/api/save-binance-wallets', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                            },
+                                            body: JSON.stringify({ wallets: updatedWallets }),
+                                        });
+
+                                        if (!response.ok) {
+                                            throw new Error('Failed to save wallets');
+                                        }
+
+                                        // Optional: Refresh from API if needed
+                                        const data = await response.json();
+                                        setResult(data);
+                                    } catch (err) {
+                                        setError(err instanceof Error ? err.message : 'Save failed');
+                                    } finally {
+                                        setIsLoading(false);
+                                    }
+                                }}
+                                disabled={isLoading}
+                                className="text-xs bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded disabled:opacity-50"
+                            >
+                                {isLoading ? 'Saving...' : 'Save Changes'}
+                            </button> */}
+                
+                                <button
                                 onClick={() => {
                                     const updatedWallets = newWalletInput.split("\n").filter(w => w.trim());
                                     setBinanceWallets(updatedWallets);
@@ -645,18 +727,6 @@ export default function TraceFlowUI() {
                                             <Box className="w-5 h-5 mr-2 text-purple-400" />
                                             Suspicious Activity Patterns
                                         </h2>
-                                        {/* <div className="flex gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    const csv = convertPatternsToCSV(repeatedPatterns);
-                                                    downloadCSV(csv, 'suspicious_patterns.csv');
-                                                }}
-                                                className="flex items-center gap-1 text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded transition-colors"
-                                            >
-                                                <Download className="w-4 h-4" />
-                                                Export CSV
-                                            </button>
-                                        </div> */}
                                     </div>
                                     <PatternMatchTable
                                         results={repeatedPatterns}
@@ -669,7 +739,7 @@ export default function TraceFlowUI() {
                                 </div>
                             </div>
                         )}
-                    </div>
+                    </div> 
                 </div>
             )}
         </div>
