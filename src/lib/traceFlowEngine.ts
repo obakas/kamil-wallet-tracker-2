@@ -1,20 +1,11 @@
 import { HARDCODED_BINANCE_WALLETS } from "./binanceUtils";
-import { TraceFlowItem } from "@/types/traceFlowItem";
-import { FirstFunderMap } from "@/types/FirstFunderMap";
-import { ConvergencePoint } from "@/types/ConvergencePoint";
+import { TraceFlowItem, FirstFunderMap, ConvergenceMap, TraceFlowEngineResult} from "@/types/allType";
 import { detectRepeatedPatterns } from "@/lib/patternDetectionEngine";
 import { resolveTokenSymbol } from "@/lib/tokenResolver";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection } from "@solana/web3.js";
 
 
-type ConvergenceMap = Record<string, ConvergencePoint>;
 
-type TraceFlowEngineResult = {
-    trace: TraceFlowItem[];
-    firstFunders: FirstFunderMap;
-    convergencePoints: ConvergenceMap;
-    repeatedPatterns: ReturnType<typeof detectRepeatedPatterns>;
-};
 
 const RPC_ENDPOINT = process.env.NEXT_PUBLIC_QUIKNODE_M_RPC!;
 export const solanaConnection = new Connection(RPC_ENDPOINT);

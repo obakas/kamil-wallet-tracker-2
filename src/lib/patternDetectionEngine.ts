@@ -1,19 +1,8 @@
 // src/lib/patternDetectionEngine.ts
 
-import { TraceFlowItem } from "@/types/traceFlowItem";
+import { TraceFlowItem, WalletPattern,  RepeatedPatternResult} from "@/types/allType";
 
-type WalletPattern = {
-    wallet: string;
-    token: string;
-    pattern: string; // e.g., "pump_dump", "binance_cycle"
-    timestamp: number;
-};
 
-type RepeatedPatternResult = {
-    wallet: string;
-    pattern: string;
-    tokens: string[];
-};
 
 export function detectRepeatedPatterns(traceData: TraceFlowItem[]): RepeatedPatternResult[] {
     const walletPatterns: WalletPattern[] = [];

@@ -6,26 +6,15 @@ import Papa from "papaparse";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Button } from "@/components/ui/Button";
+import {PatternMatchProps} from "@/types/allType"
 
 
-export type PatternMatchResult = {
-    wallet: string;
-    pattern: string;
-    tokens: string[];
-    flags: string[];
-    score: number;
-};
 
 
-type Props = {
-    results: PatternMatchResult[];
-    onAddressClick?: (address: string) => void;
-};
+export const PatternMatchTable: React.FC<PatternMatchProps> = ({ results,  }: PatternMatchProps) => {
+    const [minScore, ] = useState<number>(0);
 
-export const PatternMatchTable: React.FC<Props> = ({ results, onAddressClick }: Props) => {
-    const [minScore, setMinScore] = useState<number>(0);
-
-    const [tokenFilter, setTokenFilter] = useState("");
+    const [tokenFilter, ] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
@@ -51,12 +40,6 @@ export const PatternMatchTable: React.FC<Props> = ({ results, onAddressClick }: 
     }, [tokenFilter, minScore]);
 
 
-    // const filteredEntries = results.filter(([wallet, { count }]) => {
-    //     return (
-    //         count >= minConnections &&
-    //         wallet.toLowerCase().includes(searchWallet.toLowerCase())
-    //     );
-    // });
 
     const filteredResults = useMemo(
         () => results.filter(r => r.score >= minScore),

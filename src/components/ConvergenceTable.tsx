@@ -1,17 +1,16 @@
 "use client";
-import { useState, useMemo, useEffect, Key } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "./ui/Button";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { shorten, wrapAddress } from "@/lib/utils";
+import {  wrapAddress } from "@/lib/utils";
+import {ConvergenceTableProps} from "@/types/allType";
 
 
-type ConvergenceTableProps = {
-    ConvergencePoints: Record<string, { sources: string[]; count: number }>;
-    onAddressClick?: (address: string) => void;//
-};
+
 
 export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergencePoints }) => {
     const entries = Object.entries(ConvergencePoints || {}).sort(
@@ -20,7 +19,7 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
     const [minConnections, setMinConnections] = useState(1);
     const [searchWallet, setSearchWallet] = useState("");
 
-    const [tokenFilter, setTokenFilter] = useState("");
+    const [tokenFilter, ] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 

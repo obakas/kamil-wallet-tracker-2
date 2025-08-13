@@ -1,5 +1,6 @@
 "use client";
-import { useState, useMemo, useEffect, useCallback } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import { shorten, formatDate, wrapAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { saveAs } from "file-saver";
@@ -7,14 +8,12 @@ import Papa from "papaparse";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { ClipboardCopyIcon } from "lucide-react";
-
-type FlowTimelineTableProps = {
-    data: any[]; // Replace with your actual data type
-    onAddressClick?: (address: string) => void;
-};
+import {FlowTimelineTableProps} from "@/types/allType";
 
 
-export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTableProps) => {
+
+
+export const FlowTimelineTable = ({ data,  }: FlowTimelineTableProps) => {
     const [tokenFilter, setTokenFilter] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -263,7 +262,7 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
                                         <td className="px-2 py-4 whitespace-nowrap">
                                             {data.token ? (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-700 text-gray-200">
-                                                    {data.token.length > 5 ? data.token.slice(0, 5) + "..." : data.token}
+                                                    {data.token.length > 7 ? data.token.slice(0, 5) + "..." : data.token}
                                                 </span>
                                             ) : (
                                                 <span className="text-gray-500">-</span>

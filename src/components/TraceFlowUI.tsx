@@ -1,13 +1,11 @@
-// app/components/TraceFlowUI.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { FlowTimelineTable } from "@/components/FlowTimelineTable";
-import { ClipboardCopyIcon, ClipboardPasteIcon, XIcon, Info, Zap, ArrowRightIcon, ShareIcon, AlertCircle, Box,  CheckIcon, EditIcon } from "lucide-react";
-import { TraceFlowItem } from "@/types/traceFlowItem";
-import { FirstFunderMap } from "@/types/FirstFunderMap";
+import { ClipboardCopyIcon, ClipboardPasteIcon, XIcon, Info, Zap, ArrowRightIcon, ShareIcon, AlertCircle, Box, CheckIcon, EditIcon } from "lucide-react";
+import { TraceFlowItem, FirstFunderMap, PatternMatchResult } from "@/types/allType";
 import { ConvergenceTable } from "./ConvergenceTable";
-import { PatternMatchTable, PatternMatchResult } from "@/components/PatternMatchTable";
+import { PatternMatchTable, } from "@/components/PatternMatchTable";
 import { HARDCODED_BINANCE_WALLETS } from "@/lib/binanceUtils";
 
 
@@ -25,80 +23,6 @@ export default function TraceFlowUI() {
     const [binanceWallets, setBinanceWallets] = useState<string[]>(Array.from(HARDCODED_BINANCE_WALLETS));
     const [isEditingWallets, setIsEditingWallets] = useState(false);
     const [newWalletInput, setNewWalletInput] = useState("");
-
-    // const [walletAddress, setWalletAddress] = useState('');
-    // const [isLoading, setIsLoading] = useState(false);
-    // const [result, setResult] = useState<any>(null);
-
-    // const handleSaveWallets = async () => {
-    //     setIsLoading(true);
-    //     setError("");
-
-    //     try {
-    //         const updatedWallets = newWalletInput
-    //             .split("\n")
-    //             .filter(w => w.trim());
-
-    //         const response = await fetch('/api/binance/wallets', {
-    //             method: 'PUT',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //             },
-    //             body: JSON.stringify({ wallets: updatedWallets }),
-    //         });
-
-    //         if (!response.ok) {
-    //             const errorData = await response.json();
-    //             throw new Error(errorData.message || 'Failed to save wallets');
-    //         }
-
-    //         const data = await response.json();
-    //         setBinanceWallets(data.wallets); // Use the validated wallets from server
-    //         setIsEditingWallets(false);
-    //         setNewWalletInput("");
-    //         setResult({ success: true, count: data.wallets.length });
-
-    //     } catch (err) {
-    //         setError(err instanceof Error ? err.message : 'Save failed');
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // };
-
-    // const handleSaveWallet = async (e: React.FormEvent) => {
-    //     e.preventDefault();
-    //     setIsLoading(true);
-    //     setResult(null);
-    //     setResult(null);
-
-    //     try {
-    //         const response = await fetch('/api/add-binance', {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //             },
-    //             body: JSON.stringify({ walletAddress }),
-    //         });
-
-    //         const data = await response.json();
-
-    //         console.log("Response data:", data);
-
-    //         if (!response.ok) {
-    //             throw new Error(data.error || 'Failed to add wallet');
-    //         }
-
-    //         setResult(data);
-    //         setWalletAddress('');
-    //     } catch (err) {
-    //         setError(err instanceof Error ? err.message : 'Unknown error occurred');
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // };
-
-
-    // console.log("Initial Binance Wallets:", BINANCE_WALLETS);
 
 
 
@@ -383,8 +307,8 @@ export default function TraceFlowUI() {
                             >
                                 {isLoading ? 'Saving...' : 'Save Changes'}
                             </button> */}
-                
-                                <button
+
+                            <button
                                 onClick={() => {
                                     const updatedWallets = newWalletInput.split("\n").filter(w => w.trim());
                                     setBinanceWallets(updatedWallets);
@@ -426,72 +350,7 @@ export default function TraceFlowUI() {
                     </div>
                 )}
             </div>
-            {/* <div className="bg-gray-800/40 p-5 rounded-xl border border-gray-700/50 mb-6">
-                <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-medium text-gray-300 flex items-center">
-                        <svg className="w-4 h-4 mr-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                        </svg>
-                        Binance Wallets
-                    </h3>
-                    <button
-                        onClick={() => setIsEditingWallets(!isEditingWallets)}
-                        className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded flex items-center gap-1 transition-colors"
-                    >
-                        {isEditingWallets ? <CheckIcon className="w-3 h-3" /> : <EditIcon className="w-3 h-3" />}
-                        {isEditingWallets ? "Save" : "Edit"}
-                    </button>
-                </div>
 
-                {isEditingWallets ? (
-                    <div className="space-y-3">
-                        <textarea
-                            className="w-full p-2 border border-gray-600 rounded-lg bg-gray-700/30 text-gray-100 font-mono text-sm"
-                            value={newWalletInput}
-                            onChange={(e) => setNewWalletInput(e.target.value)}
-                            placeholder="Add wallets (one per line)"
-                            rows={4}
-                        />
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => {
-                                    const wallets = newWalletInput.split('\n').filter(w => w.trim());
-                                    setBinanceWallets(wallets);
-                                    setIsEditingWallets(false);
-                                }}
-                                className="text-xs bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded"
-                            >
-                                Confirm
-                            </button>
-                            <button
-                                onClick={() => setIsEditingWallets(false)}
-                                className="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="space-y-2">
-                        {binanceWallets.length > 0 ? (
-                            binanceWallets.map((wallet, i) => (
-                                <div key={i} className="flex items-center justify-between p-2 bg-gray-700/20 rounded">
-                                    <span className="font-mono text-sm text-gray-300">{truncateAddress(wallet, 8, 6)}</span>
-                                    <button
-                                        onClick={() => navigator.clipboard.writeText(wallet)}
-                                        className="text-gray-400 hover:text-blue-400 transition-colors p-1"
-                                        title="Copy"
-                                    >
-                                        <ClipboardCopyIcon className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-xs text-gray-500">No Binance wallets configured.</p>
-                        )}
-                    </div>
-                )}
-            </div> */}
 
             {/* Action Button */}
             <button
@@ -523,107 +382,113 @@ export default function TraceFlowUI() {
 
             {/* Insights Section */}
             {(Object.keys(firstFunders).length > 0 || Object.keys(convergencePoints).length > 0) && (
-                <div className="mb-8 space-y-4">
-                    <h3 className="text-xl font-semibold text-gray-100 flex items-center">
+                <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-100 mb-3 flex items-center">
                         <svg className="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                         </svg>
                         Key Insights
                     </h3>
 
-                    {/* First Funder Summary */}
-                    {Object.entries(firstFunders).length > 0 && (
-                        <div className="bg-yellow-900/10 border border-yellow-800/50 rounded-xl p-5 shadow-lg">
-                            <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-sm font-semibold text-yellow-300 flex items-center">
-                                    <Zap className="w-4 h-4 mr-2" />
-                                    First Funders
-                                </h4>
-                                <span className="text-xs bg-yellow-900/30 text-yellow-200 px-2 py-1 rounded-full">
-                                    {Object.keys(firstFunders).length} found
-                                </span>
-                            </div>
-                            <div className="space-y-3">
-                                {Object.entries(firstFunders).map(([recipient, { from, timestamp }]) => (
-                                    <div key={recipient} className="text-sm text-gray-300 p-3 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-colors">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <div className="flex items-center">
-                                                    <span
-                                                        className="font-mono text-yellow-300 hover:text-yellow-200 transition-colors cursor-pointer text-xs"
-                                                        onClick={() => setWalletInput(from)}
-                                                    >
-                                                        {truncateAddress(from)}
-                                                    </span>
-                                                    <ArrowRightIcon className="w-3 h-3 mx-2 text-gray-500" />
-                                                    <span
-                                                        className="font-mono text-blue-300 hover:text-blue-200 transition-colors cursor-pointer text-xs"
-                                                        onClick={() => setWalletInput(recipient)}
-                                                    >
-                                                        {truncateAddress(recipient)}
-                                                    </span>
-                                                </div>
-                                                <div className="text-xs text-gray-500 mt-1">
-                                                    First transaction at {new Date(timestamp * 1000).toLocaleString()}
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => navigator.clipboard.writeText(recipient)}
-                                                className="text-gray-400 hover:text-gray-100 transition p-1 rounded hover:bg-gray-700/50"
-                                                title="Copy address"
-                                            >
-                                                <ClipboardCopyIcon className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Convergence Points Summary */}
-                    {Object.entries(convergencePoints).length > 0 && (
-                        <div className="bg-blue-900/10 border border-blue-800/50 rounded-xl p-5 shadow-lg">
-                            <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-sm font-semibold text-blue-300 flex items-center">
-                                    <ShareIcon className="w-4 h-4 mr-2" />
-                                    Convergence Hubs
-                                </h4>
-                                <span className="text-xs bg-blue-900/30 text-blue-200 px-2 py-1 rounded-full">
-                                    {Object.keys(convergencePoints).length} found
-                                </span>
-                            </div>
-                            <div className="space-y-3">
-                                {Object.entries(convergencePoints)
-                                    .sort((a, b) => b[1].count - a[1].count)
-                                    .map(([wallet, data]) => (
-                                        <div key={wallet} className="text-sm text-gray-300 p-3 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-colors">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* First Funder Summary - Compact Cards */}
+                        {Object.entries(firstFunders).length > 0 && (
+                            <div className="bg-yellow-900/10 border border-yellow-800/50 rounded-xl p-4 shadow-lg">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-xs font-semibold text-yellow-300 flex items-center">
+                                        <Zap className="w-3 h-3 mr-1.5" />
+                                        First Funders
+                                    </h4>
+                                    <span className="text-xs bg-yellow-900/30 text-yellow-200 px-2 py-0.5 rounded-full">
+                                        {Object.keys(firstFunders).length}
+                                    </span>
+                                </div>
+                                <div className="max-h-60 overflow-y-auto pr-2 space-y-2 thin-scrollbar">
+                                    {Object.entries(firstFunders).map(([recipient, { from, timestamp }]) => (
+                                        <div key={recipient} className="text-xs p-2 bg-gray-800/30 rounded hover:bg-gray-800/50 transition-colors">
                                             <div className="flex justify-between items-center">
-                                                <div>
-                                                    <div className="font-mono text-green-300 hover:text-green-200 transition-colors cursor-pointer text-xs"
-                                                        onClick={() => setWalletInput(wallet)}
-                                                    >
-                                                        {truncateAddress(wallet)}
-                                                    </div>
-                                                    <div className="flex items-center mt-1">
-                                                        <span className="text-xs bg-green-900/30 text-green-300 px-2 py-0.5 rounded-full">
-                                                            {data.count} incoming connections
+                                                <div className="truncate">
+                                                    <div className="flex items-center">
+                                                        <span
+                                                            className="font-mono text-yellow-300 hover:text-yellow-200 transition-colors cursor-pointer truncate"
+                                                            onClick={() => setWalletInput(from)}
+                                                            title={from}
+                                                        >
+                                                            {truncateAddress(from)}
                                                         </span>
+                                                        <ArrowRightIcon className="w-2.5 h-2.5 mx-1.5 text-gray-500 flex-shrink-0" />
+                                                        <span
+                                                            className="font-mono text-blue-300 hover:text-blue-200 transition-colors cursor-pointer truncate"
+                                                            onClick={() => setWalletInput(recipient)}
+                                                            title={recipient}
+                                                        >
+                                                            {truncateAddress(recipient)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-gray-500 truncate" title={new Date(timestamp * 1000).toLocaleString()}>
+                                                        {new Date(timestamp * 1000).toLocaleDateString()}
                                                     </div>
                                                 </div>
                                                 <button
-                                                    onClick={() => navigator.clipboard.writeText(wallet)}
-                                                    className="text-gray-400 hover:text-gray-100 transition p-1 rounded hover:bg-gray-700/50"
+                                                    onClick={() => navigator.clipboard.writeText(recipient)}
+                                                    className="text-gray-400 hover:text-gray-100 transition p-0.5 rounded hover:bg-gray-700/50 flex-shrink-0"
                                                     title="Copy address"
                                                 >
-                                                    <ClipboardCopyIcon className="w-4 h-4" />
+                                                    <ClipboardCopyIcon className="w-3 h-3" />
                                                 </button>
                                             </div>
                                         </div>
                                     ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+
+                        {/* Convergence Points Summary - Compact Cards */}
+                        {Object.entries(convergencePoints).length > 0 && (
+                            <div className="bg-blue-900/10 border border-blue-800/50 rounded-xl p-4 shadow-lg">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-xs font-semibold text-blue-300 flex items-center">
+                                        <ShareIcon className="w-3 h-3 mr-1.5" />
+                                        Convergence Hubs
+                                    </h4>
+                                    <span className="text-xs bg-blue-900/30 text-blue-200 px-2 py-0.5 rounded-full">
+                                        {Object.keys(convergencePoints).length}
+                                    </span>
+                                </div>
+                                <div className="max-h-60 overflow-y-auto pr-2 space-y-2 thin-scrollbar">
+                                    {Object.entries(convergencePoints)
+                                        .sort((a, b) => b[1].count - a[1].count)
+                                        .map(([wallet, data]) => (
+                                            <div key={wallet} className="text-xs p-2 bg-gray-800/30 rounded hover:bg-gray-800/50 transition-colors">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="truncate">
+                                                        <div
+                                                            className="font-mono text-green-300 hover:text-green-200 transition-colors cursor-pointer truncate"
+                                                            onClick={() => setWalletInput(wallet)}
+                                                            title={wallet}
+                                                        >
+                                                            {truncateAddress(wallet)}
+                                                        </div>
+                                                        <div className="mt-0.5">
+                                                            <span className="text-xs bg-green-900/30 text-green-300 px-1.5 py-0.5 rounded-full">
+                                                                {data.count} connections
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => navigator.clipboard.writeText(wallet)}
+                                                        className="text-gray-400 hover:text-gray-100 transition p-0.5 rounded hover:bg-gray-700/50 flex-shrink-0"
+                                                        title="Copy address"
+                                                    >
+                                                        <ClipboardCopyIcon className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -739,7 +604,7 @@ export default function TraceFlowUI() {
                                 </div>
                             </div>
                         )}
-                    </div> 
+                    </div>
                 </div>
             )}
         </div>

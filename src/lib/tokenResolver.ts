@@ -11,7 +11,8 @@ export async function resolveTokenSymbol(mint: string): Promise<string> {
     if (!tokenMap) {
         try {
             console.log("🔄 Fetching token list...");
-            const res = await fetch("https://cdn.jsdelivr.net/gh/solana-labs/token-list@main/src/tokens/solana.tokenlist.json") || await fetch("./src/data/solana.tokenlist.json");
+            const res = await fetch("https://cdn.jsdelivr.net/gh/solana-labs/token-list@main/src/tokens/solana.tokenlist.json") || await fetch("./src/data/solana.tokenlist.json") || await fetch('https://api.solana.fm/v0/tokens');
+            // const res  = await fetch('https://api.solana.fm/v0/tokens');
             const data = await res.json();
             tokenMap = {};
 
