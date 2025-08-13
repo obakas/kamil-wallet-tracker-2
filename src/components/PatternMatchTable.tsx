@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
@@ -25,10 +25,48 @@ type Props = {
 export const PatternMatchTable: React.FC<Props> = ({ results, onAddressClick }: Props) => {
     const [minScore, setMinScore] = useState<number>(0);
 
+    const [tokenFilter, setTokenFilter] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+
+    // 1. Combine filters into ONE memo
+    const filteredData = useMemo(() => {
+        return results.filter(r =>
+            r.score >= minScore &&
+            (tokenFilter.trim() === "" || r.tokens.some(token => token.includes(tokenFilter)))
+        );
+    }, [results, minScore, tokenFilter]);
+
+    // 2. Paginate after filtering
+    const paginatedData = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        return filteredData.slice(start, end);
+    }, [filteredData, currentPage]);
+
+    // 3. Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [tokenFilter, minScore]);
+
+
+    // const filteredEntries = results.filter(([wallet, { count }]) => {
+    //     return (
+    //         count >= minConnections &&
+    //         wallet.toLowerCase().includes(searchWallet.toLowerCase())
+    //     );
+    // });
+
     const filteredResults = useMemo(
         () => results.filter(r => r.score >= minScore),
         [results, minScore]
     );
+
+
+    if (!results.length) return null;
+
+
 
     const exportCSV = () => {
         const csv = Papa.unparse(
@@ -113,7 +151,7 @@ export const PatternMatchTable: React.FC<Props> = ({ results, onAddressClick }: 
                         </tr>
                     </thead>
                     <tbody className="bg-gray-900 divide-y divide-gray-700">
-                        {filteredResults.map((r, i) => (
+                        {paginatedData.map((r, i) => (
                             <tr
                                 key={i}
                                 className={r.score > 15 ? 'bg-red-900/20' : 'hover:bg-gray-800/50'}
@@ -170,6 +208,59 @@ export const PatternMatchTable: React.FC<Props> = ({ results, onAddressClick }: 
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination Controls (if applicable) */}
+            {filteredResults.length > 10 && (
+                <div className="flex items-center justify-between px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg">
+                    <div className="text-sm text-gray-400">
+                        Showing{" "}
+                        <span className="font-medium text-gray-300">
+                            {(currentPage - 1) * itemsPerPage + 1}-
+                            {Math.min(currentPage * itemsPerPage, filteredResults.length)}
+                        </span>{" "}
+                        of <span className="font-medium text-gray-300">{filteredResults.length}</span>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(1)}
+                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
+                        >
+                            First
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage * itemsPerPage >= filteredResults.length}
+                            onClick={() => setCurrentPage((prev) => prev + 1)}
+                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
+                        >
+                            Next
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage >= Math.ceil(filteredResults.length / itemsPerPage)}
+                            onClick={() => setCurrentPage(Math.ceil(filteredResults.length / itemsPerPage))}
+                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
+                        >
+                            Last
+                        </Button>
+
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

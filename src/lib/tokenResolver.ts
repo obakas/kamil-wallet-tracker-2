@@ -1,4 +1,6 @@
 // src/lib/tokenResolver.ts
+
+
 let tokenMap: Record<string, string> | null = null;
 
 export async function resolveTokenSymbol(mint: string): Promise<string> {
@@ -9,7 +11,7 @@ export async function resolveTokenSymbol(mint: string): Promise<string> {
     if (!tokenMap) {
         try {
             console.log("🔄 Fetching token list...");
-            const res = await fetch("https://cdn.jsdelivr.net/gh/solana-labs/token-list@main/src/tokens/solana.tokenlist.json");
+            const res = await fetch("https://cdn.jsdelivr.net/gh/solana-labs/token-list@main/src/tokens/solana.tokenlist.json") || await fetch("./src/data/solana.tokenlist.json");
             const data = await res.json();
             tokenMap = {};
 
@@ -28,7 +30,8 @@ export async function resolveTokenSymbol(mint: string): Promise<string> {
     const found = tokenMap[normalizedMint];
     if (!found) {
         console.warn("⚠️ Unmatched token mint:", normalizedMint);
-        return normalizedMint.slice(0, 5) + "...";
+        // return normalizedMint.slice(0, 5) + "...";
+        return normalizedMint;
     }
 
     return found;

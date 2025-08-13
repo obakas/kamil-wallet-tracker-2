@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { FlowTimelineTable } from "@/components/FlowTimelineTable";
-import { ClipboardCopyIcon, ClipboardPasteIcon, XIcon, Info, Zap, ArrowRightIcon, ShareIcon, AlertCircle, Box, Download, CheckIcon, EditIcon } from "lucide-react";
+import { ClipboardCopyIcon, ClipboardPasteIcon, XIcon, Info, Zap, ArrowRightIcon, ShareIcon, AlertCircle, Box,  CheckIcon, EditIcon } from "lucide-react";
 import { TraceFlowItem } from "@/types/traceFlowItem";
 import { FirstFunderMap } from "@/types/FirstFunderMap";
 import { ConvergenceTable } from "./ConvergenceTable";

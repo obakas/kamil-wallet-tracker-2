@@ -370,6 +370,15 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
                             variant="outline"
                             size="sm"
                             disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(1)}
+                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
+                        >
+                            First
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
                             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                             className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
                         >
@@ -383,6 +392,15 @@ export const ConvergenceTable: React.FC<ConvergenceTableProps> = ({ ConvergenceP
                             className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
                         >
                             Next
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage >= Math.ceil(filteredEntries.length / itemsPerPage)}
+                            onClick={() => setCurrentPage(Math.ceil(filteredEntries.length / itemsPerPage))}
+                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
+                        >
+                            Last
                         </Button>
 
                     </div>

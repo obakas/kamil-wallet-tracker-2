@@ -199,7 +199,7 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
                         </thead>
                         <tbody className="bg-gray-800/50 divide-y divide-gray-700/30">
                             {filteredData.length > 0 ? (
-                                paginatedData.map((flow, idx) => (
+                                paginatedData.map((data, idx) => (
                                     <tr
                                         key={idx}
                                         className="hover:bg-gray-750/50 transition-colors group"
@@ -220,9 +220,9 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
                                         <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-300 font-mono">
                                             <div className="flex items-center gap-2">
                                                 <span className="hover:text-blue-300 transition-colors cursor-pointer">
-                                                    {shorten(flow.from)}
+                                                    {shorten(data.from)}
                                                 </span>
-                                                {flow.isFirstFunder && (
+                                                {data.isFirstFunder && (
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-900/50 text-yellow-200 border border-yellow-800/50">
                                                         First
                                                     </span>
@@ -230,7 +230,7 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        navigator.clipboard.writeText(flow.from);
+                                                        navigator.clipboard.writeText(data.from);
                                                     }}
                                                     className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-200 transition-opacity"
                                                     title="Copy address"
@@ -244,12 +244,12 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
                                         <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-300 font-mono">
                                             <div className="flex items-center gap-2">
                                                 <span className="hover:text-blue-300 transition-colors cursor-pointer">
-                                                    {shorten(flow.to)}
+                                                    {shorten(data.to)}
                                                 </span>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        navigator.clipboard.writeText(flow.to);
+                                                        navigator.clipboard.writeText(data.to);
                                                     }}
                                                     className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-200 transition-opacity"
                                                     title="Copy address"
@@ -261,9 +261,9 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
 
                                         {/* Token */}
                                         <td className="px-2 py-4 whitespace-nowrap">
-                                            {flow.token ? (
+                                            {data.token ? (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-700 text-gray-200">
-                                                    {flow.token}
+                                                    {data.token.length > 5 ? data.token.slice(0, 5) + "..." : data.token}
                                                 </span>
                                             ) : (
                                                 <span className="text-gray-500">-</span>
@@ -272,9 +272,9 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
 
                                         {/* Amount */}
                                         <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-300">
-                                            {flow.amount ? (
+                                            {data.amount ? (
                                                 <span className="font-medium">
-                                                    ${flow.amount.toFixed(2)}
+                                                    ${data.amount.toFixed(2)}
                                                 </span>
                                             ) : (
                                                 <span className="text-gray-500">-</span>
@@ -283,19 +283,19 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
 
                                         {/* Timestamp */}
                                         <td className="px-0 py-4 whitespace-nowrap text-sm text-gray-400">
-                                            {formatDate(flow.timestamp)}
+                                            {formatDate(data.timestamp)}
                                         </td>
 
                                         {/* Exchange */}
                                         <td className="px-2 py-4 whitespace-nowrap">
-                                            {flow.isBinanceInflow ? (
+                                            {data.isBinanceInflow ? (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/50 text-green-100 border border-green-800/50">
                                                     <svg className="mr-1.5 h-2 w-2 text-green-400" fill="currentColor" viewBox="0 0 8 8">
                                                         <circle cx="4" cy="4" r="3" />
                                                     </svg>
                                                     Binance In
                                                 </span>
-                                            ) : flow.isBinanceOutflow ? (
+                                            ) : data.isBinanceOutflow ? (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-900/50 text-red-100 border border-red-800/50">
                                                     <svg className="mr-1.5 h-2 w-2 text-red-400" fill="currentColor" viewBox="0 0 8 8">
                                                         <circle cx="4" cy="4" r="3" />
@@ -341,7 +341,6 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
             </div>
 
 
-            {/* Pagination Controls (if applicable) */}
             {filteredData.length > 10 && (
                 <div className="flex items-center justify-between px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg">
                     <div className="text-sm text-gray-400">
@@ -352,7 +351,20 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
                         </span>{" "}
                         of <span className="font-medium text-gray-300">{filteredData.length}</span>
                     </div>
+
                     <div className="flex gap-2">
+                        {/* First Page */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(1)}
+                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
+                        >
+                            First
+                        </Button>
+
+                        {/* Previous */}
                         <Button
                             variant="outline"
                             size="sm"
@@ -362,19 +374,32 @@ export const FlowTimelineTable = ({ data, onAddressClick }: FlowTimelineTablePro
                         >
                             Previous
                         </Button>
+
+                        {/* Next */}
                         <Button
                             variant="outline"
                             size="sm"
-                            disabled={currentPage * itemsPerPage >= filteredData.length}
+                            disabled={currentPage >= Math.ceil(filteredData.length / itemsPerPage)}
                             onClick={() => setCurrentPage((prev) => prev + 1)}
                             className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
                         >
                             Next
                         </Button>
 
+                        {/* Last Page */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage >= Math.ceil(filteredData.length / itemsPerPage)}
+                            onClick={() => setCurrentPage(Math.ceil(filteredData.length / itemsPerPage))}
+                            className="text-gray-300 border-gray-600 hover:bg-gray-700/50 text-white"
+                        >
+                            Last
+                        </Button>
                     </div>
                 </div>
             )}
+
         </div>
     );
 };

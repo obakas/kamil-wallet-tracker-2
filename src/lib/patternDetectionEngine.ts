@@ -63,50 +63,6 @@ export function detectRepeatedPatterns(traceData: TraceFlowItem[]): RepeatedPatt
 
    
 
-    // for (const tx of traceData) {
-    //     const token = tx.token && tx.token !== "UNKNOWN" ? tx.token : "SOL";
-
-    //     // Rule 1: Pump & dump pattern — large inflow, short hold, then outflow
-    //     const inflow = tx.amount > 1000 && !tx.isBinanceOutflow && tx.to;
-    //     const outflow = tx.amount > 1000 && !tx.isBinanceInflow && tx.from;
-
-    //     if (inflow) {
-    //         walletPatterns.push({
-    //             wallet: tx.to,
-    //             token,
-    //             pattern: "pump_inflow",
-    //             timestamp: tx.timestamp,
-    //         });
-    //     }
-
-    //     if (outflow) {
-    //         walletPatterns.push({
-    //             wallet: tx.from,
-    //             token,
-    //             pattern: "dump_outflow",
-    //             timestamp: tx.timestamp,
-    //         });
-    //     }
-
-    //     // Rule 2: Binance cycle — sends to Binance and later receives from Binance
-    //     if (tx.isBinanceOutflow) {
-    //         walletPatterns.push({
-    //             wallet: tx.from,
-    //             token,
-    //             pattern: "binance_outflow",
-    //             timestamp: tx.timestamp,
-    //         });
-    //     }
-
-    //     if (tx.isBinanceInflow) {
-    //         walletPatterns.push({
-    //             wallet: tx.to,
-    //             token,
-    //             pattern: "binance_inflow",
-    //             timestamp: tx.timestamp,
-    //         });
-    //     }
-    // }
 
     const patternMap: Record<string, RepeatedPatternResult> = {};
 
